@@ -7,7 +7,8 @@ foreach ($vm in $vmParams) {
     Invoke-Command -ComputerName $vm.'Parent Host Name' -Credential $credential -ScriptBlock {
         param($vm, $credential, $sharePath, $isoDestination)
 
-        Write-Host "Deploying VM $vm.'VM Name' on the $vm.'Parent Host Name'"
+        Write-Host "------------------------------------------------------------------------"
+        Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name')"
         Write-Host "------------------------------------------------------------------------"
 
         # Ident the switch name on the target host
@@ -15,13 +16,13 @@ foreach ($vm in $vmParams) {
         $SwitchName = Get-VMSwitch
 
         # Create a virtual machine
-        Write-Host -fore Yellow 'Creating a virtual machine...'
-        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "C:\Hyper-V\$($vm.'VM Name')" -SwitchName $SwitchName.Name # -VHDPath "C:\Hyper-V\$($vm.'VM Name')\$($vm.'VM Name').vhdx"
-
+        Write-Host -fore Yellow 'Creating the virtual machine...'
+        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "C:\Hyper-V\$($vm.'VM Name')" -SwitchName $SwitchName.Name
+        
         # Assign the number of CPU cores
         Write-Host -fore Yellow 'Assigning the number of CPU cores...'
         Set-VMProcessor -VMName $vm.'VM Name' -Count $vm.CPU
-
+        
         # Configure the network adapter and Vlan
         Write-Host -fore Yellow 'Configuring the network adapter and Vlan...'
         Set-VMNetworkAdapterVlan -VMName $vm.'VM Name' -VMNetworkAdapterName 'Network Adapter' -VlanId $vm.VLAN -Access
@@ -73,7 +74,8 @@ foreach ($vm in $vmParams) {
         Add-VMDvdDrive -VMName $vm.'VM Name' -Path $isoPath
         Set-VMFirmware -VMName $vm.'VM Name' -FirstBootDevice (Get-VMDvdDrive -VMName $vm.'VM Name')
 
-        Write-Host "Deploying VM $vm.'VM Name' on the $vm.'Parent Host Name' completed."
+        Write-Host "------------------------------------------------------------------------"
+        Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name') completed."
         Write-Host "------------------------------------------------------------------------"
 
     } -ArgumentList $vm, $credential, $sharePath, $isoDestination
