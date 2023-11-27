@@ -1,8 +1,14 @@
 $vmParams = Import-Csv -Path "VMs.csv"
+$credential = Get-Credential                                            # -Credential "domain\user"
+$sharePath = '\\vd-adm-44\Install\OracleLinux-R8-U8-x86_64-dvd.iso'
+$isoDestination = 'C:\Install'
 
 foreach ($vm in $vmParams) {
-    Invoke-Command -ComputerName $vm.'Parent Host Name' -ScriptBlock {
-        param($vm)
+    Invoke-Command -ComputerName $vm.'Parent Host Name' -ScriptBlock { #-Credential $credential 
+        param($vm, $credential, $sharePath, $isoDestination)
+
+        Write-Host "Deploying VM $vm.'VM Name' on the $vm.'Parent Host Name'"
+        Write-Host "------------------------------------------------------------------------"
 
         # Ident the switch name on the target host
         Write-Host -fore Yellow 'Identifying the switch name on the target host...'
@@ -31,11 +37,45 @@ foreach ($vm in $vmParams) {
         # Disable Secure Boot
         Write-Host -fore Yellow 'Disabling Secure Boot'
         Set-VMFirmware -VMName $vm.'VM Name' -EnableSecureBoot Off
+        
+        # Atach network disc and copy iso
+        $fileInfo = New-Object System.IO.FileInfo $sharePath
+        $fileName = $fileInfo.Name
+        $directoryPath = $fileInfo.DirectoryName
+        $destinationPath = "$isoDestination\$fileName"
+
+        if (Test-Path -Path $destinationPath) {
+            Write-Host -fore Green "Checking for the presence of an iso file in $isoDestination."
+            Write-Host -fore Yellow "The file already exists in the $destinationPath. Nothing to do."
+        } else {
+            Write-Host -fore Yellow "File not found in $destinationPath."
+            Write-Host -fore Green "Starting to copy..."
+            New-PSDrive -Name "W" -PSProvider "FileSystem" -Root "$directoryPath" -Credential $credential  #$Using:credential 
+            $drive = Get-PSDrive W
+            if ($drive) {
+                Write-Host -fore Green "Created network drive at $directoryPath"
+                Write-Host -fore Green "Copying the ISO file to $isoDestination..."
+                Copy-Item -Path "$sharePath" -Destination "$isoDestination"
+                remove-PSDrive -Name "W"
+                if (Test-Path -Path $destinationPath) {
+                    Write-Host -fore Green "ISO image successfully copied."
+                } else {
+                    Write-Host -fore Red "ISO image not copied."
+                }
+            } else {
+                Write-Host -fore Red "Network drive does'n exist"
+            }
+        }        
 
         # Setup boot from CD and map install image
         Write-Host -fore Yellow 'Setting boot from CD and mapping install image...'
         $isoPath = "C:\Install\OracleLinux-R8-U8-x86_64-dvd.iso"
         Add-VMDvdDrive -VMName $vm.'VM Name' -Path $isoPath
         Set-VMFirmware -VMName $vm.'VM Name' -FirstBootDevice (Get-VMDvdDrive -VMName $vm.'VM Name')
-    } -ArgumentList $vm
+
+        Write-Host "Deploying VM $vm.'VM Name' on the $vm.'Parent Host Name' completed."
+        Write-Host "------------------------------------------------------------------------"
+
+    } -ArgumentList $vm, $credential, $sharePath, $isoDestination
 }
+
