@@ -1,10 +1,10 @@
 $vmParams = Import-Csv -Path "VMs.csv"
-$credential = Get-Credential                                            # -Credential "domain\user"
+$credential = Get-Credential  # "domain\user"
 $sharePath = '\\vd-adm-44\Install\OracleLinux-R8-U8-x86_64-dvd.iso'
 $isoDestination = 'C:\Install'
 
 foreach ($vm in $vmParams) {
-    Invoke-Command -ComputerName $vm.'Parent Host Name' -ScriptBlock { #-Credential $credential 
+    Invoke-Command -ComputerName $vm.'Parent Host Name' -Credential $credential -ScriptBlock {
         param($vm, $credential, $sharePath, $isoDestination)
 
         Write-Host "Deploying VM $vm.'VM Name' on the $vm.'Parent Host Name'"
