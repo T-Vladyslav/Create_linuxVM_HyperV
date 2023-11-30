@@ -11,13 +11,30 @@ foreach ($vm in $vmParams) {
         Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name')"
         Write-Host "------------------------------------------------------------------------"
 
-        # Ident the switch name on the target host
+        # Retrieving the list of switches on the target host
         Write-Host -fore Yellow 'Identifying the switch name on the target host...'
-        $SwitchName = Get-VMSwitch
+        $switches = Get-VMSwitch
+        $switchCount = $switches.Count
+
+        # Check the number of switches
+        $SwitchName = $null
+        if ($switchCount -gt 1) {
+            Write-Host -fore Cyan "Multiple virtual switches detected on the host $($vm.'Parent Host Name'). Please select one from the $($vm.'VM Name'):"
+            for ($i = 0; $i -lt $switchCount; $i++) {
+                Write-Host "$i. $($switches[$i].Name)"
+            }
+            $selectedSwitchIndex = Read-Host "Enter the number of the switch you want to use (0-$($switchCount-1))"
+            $SwitchName = $switches[$selectedSwitchIndex].Name
+        } elseif ($switchCount -eq 1) {
+            $SwitchName = $switches[0].Name
+        } else {
+            Write-Host -fore Red "No virtual switches found on the host."
+            return
+        }
 
         # Create a virtual machine
         Write-Host -fore Yellow 'Creating the virtual machine...'
-        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "C:\Hyper-V\$($vm.'VM Name')" -SwitchName $SwitchName.Name
+        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "C:\Hyper-V\$($vm.'VM Name')" -SwitchName $SwitchName   # .Name
         
         # Assign the number of CPU cores
         Write-Host -fore Yellow 'Assigning the number of CPU cores...'
