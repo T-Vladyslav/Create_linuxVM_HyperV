@@ -34,7 +34,7 @@ foreach ($vm in $vmParams) {
 
         # Create a virtual machine
         Write-Host -fore Yellow 'Creating the virtual machine...'
-        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "C:\Hyper-V\$($vm.'VM Name')" -SwitchName $SwitchName   # .Name
+        New-VM -Name $vm.'VM Name' -MemoryStartupBytes ([int]$vm.RAM * 1GB) -Generation 2 -Path "$($vm.'PATH')$($vm.'VM Name')" -SwitchName $SwitchName   # .Name
         
         # Assign the number of CPU cores
         Write-Host -fore Yellow 'Assigning the number of CPU cores...'
@@ -48,8 +48,8 @@ foreach ($vm in $vmParams) {
         Write-Host -fore Yellow 'Adding virtual disks...'
         1..$vm.'Number of Disks' | ForEach-Object {
             $diskName = "$($vm.'VM Name')_Disk$_"
-            New-VHD -Path "C:\Hyper-V\$($vm.'VM Name')\$diskName.vhdx" -SizeBytes ([int]$vm.'Disk Size' * 1GB)
-            Add-VMHardDiskDrive -VMName $vm.'VM Name' -Path "C:\Hyper-V\$($vm.'VM Name')\$diskName.vhdx"
+            New-VHD -Path "$($vm.'PATH')$($vm.'VM Name')\$diskName.vhdx" -SizeBytes ([int]$vm.'Disk Size' * 1GB)
+            Add-VMHardDiskDrive -VMName $vm.'VM Name' -Path "$($vm.'PATH')$($vm.'VM Name')\$diskName.vhdx"
         }
 
         # Disable Secure Boot
