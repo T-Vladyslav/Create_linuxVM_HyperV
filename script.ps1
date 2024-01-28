@@ -111,9 +111,8 @@ foreach ($vm in $vmParams) {
 
             if ($vm.'VM Name' -eq $lastVm.'VM Name') {
 
-                Write-Host -fore Yellow 'Adding VM to the cluster...'
-                Write-Host -fore Cyan $vm.'VM Name'":"
-                Write-Host -fore Cyan $vm.'Parent Host Name'":"
+                Write-Host -fore Yellow "Adding VM to the cluster on $vm.'Parent Host Name'"
+
                 ## Retrieving the credentials
                 $username = $credential.UserName
             
