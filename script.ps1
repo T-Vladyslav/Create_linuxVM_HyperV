@@ -58,7 +58,6 @@ foreach ($vm in $vmParams) {
         Set-VMFirmware -VMName $vm.'VM Name' -EnableSecureBoot Off
         
         # Atach network disc and copy iso
-
         if ($copyIso) {
             $fileInfo = New-Object System.IO.FileInfo $sharePath
             $fileName = $fileInfo.Name
@@ -96,6 +95,33 @@ foreach ($vm in $vmParams) {
         $isoPath = "C:\Install\OracleLinux-R8-U8-x86_64-dvd.iso"
         Add-VMDvdDrive -VMName $vm.'VM Name' -Path $isoPath
         Set-VMFirmware -VMName $vm.'VM Name' -FirstBootDevice (Get-VMDvdDrive -VMName $vm.'VM Name')
+
+        # Adding virtual machines to the cluster using the task scheduler 
+        ## Retrieving the credentials
+        $username = $credential.UserName
+      
+        ## Retrieving the password in plain text
+        $pinpt = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($credential.Password)
+        $password = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($pinpt) 
+        [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pinpt)
+        
+        
+        ## Creating task to the task scheduler
+        $taskName = "Add_VM_to_cluster"
+        $taskEnd = 10 # time of task life in seconds
+        
+        $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-NoProfile -WindowStyle Hidden -Command "& {$currentTime = Get-Date; $timeAgo = $currentTime.AddHours(-2); $recentVMs = Get-VM | Where-Object { $_.CreationTime -gt $timeAgo }; foreach ($vm in $recentVMs) { Add-ClusterVirtualMachineRole -VMName $vm.Name}}"'
+        $taskSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds $taskEnd)
+        Register-ScheduledTask -TaskName $taskName -Action $taskAction -Settings $taskSettings -User $username -Password $password -RunLevel Highest -Force
+        
+        ## Deleting open password
+        $password = $null
+
+        ## Run task and delete
+        Start-ScheduledTask -TaskName $taskName
+        $taskLife = $taskEnd + 5
+        Start-Sleep -Seconds $taskLife
+        Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 
         Write-Host "------------------------------------------------------------------------"
         Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name') completed."

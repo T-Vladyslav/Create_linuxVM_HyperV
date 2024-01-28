@@ -1,3 +1,4 @@
 Parent Host Name,VM Name,PATH,CPU,RAM,Number of Disks,Disk Size,VLAN
-tz-hv-host-p01,testVM,C:\Hyper-V\,2,2,2,5,1
-tz-hv-host-p01,testVM01,C:\Hyper-V\,2,2,2,5,1
+tz-hv-host-p01,testVM10,C:\Hyper-V\,2,2,2,5,1
+tz-hv-host-p01,testVM11,C:\Hyper-V\,2,2,2,5,1
+tz-hv-host-p01,testVM12,C:\Hyper-V\,2,2,2,5,1
