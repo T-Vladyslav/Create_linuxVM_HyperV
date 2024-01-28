@@ -13,7 +13,7 @@ foreach ($vm in $vmParams) {
 
 foreach ($vm in $vmParams) {
     Invoke-Command -ComputerName $vm.'Parent Host Name' -Credential $credential -ScriptBlock {
-        param($vm, $credential, $sharePath, $isoDestination, $copyIso, $clusterVm, $lastHosts)
+        param($vm, $vmParams, $credential, $sharePath, $isoDestination, $copyIso, $clusterVm, $lastHosts)
 
         Write-Host "------------------------------------------------------------------------"
         Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name')"
@@ -137,6 +137,19 @@ foreach ($vm in $vmParams) {
                 $taskLife = $taskEnd + 5
                 Start-Sleep -Seconds $taskLife
                 Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+
+                ## Checking the addition of hosts to the cluster
+                ### Selection of virtual machines located on the same parent host
+                $filteredVms = $vmParams | Where-Object { $_.'Parent Host Name' -eq $vm.'Parent Host Name' } | Select-Object 'VM Name'
+
+                foreach ($filteredVm in $filteredVms) {
+                    $foundVM = Get-ClusterResource | Where-Object { $_.ResourceType -eq "Virtual Machine" -and $_.Name -match $vm.'VM Name' }
+                    if ($foundVM) {
+                        Write-Host -fore Green "Virtual machine $($vm.'VM Name') has been added to the cluster."
+                    } else {
+                        Write-Host -fore Red "Virtual machine $($vm.'VM Name') hasn't been added to the cluster."
+                    }
+                }
             }
         }
 
@@ -144,6 +157,6 @@ foreach ($vm in $vmParams) {
         Write-Host "Deploying VM $($vm.'VM Name') on the $($vm.'Parent Host Name') completed."
         Write-Host "------------------------------------------------------------------------"
 
-    } -ArgumentList $vm, $credential, $sharePath, $isoDestination, $copyIso, $clusterVm, $lastHosts
+    } -ArgumentList $vm, $vmParams, $credential, $sharePath, $isoDestination, $copyIso, $clusterVm, $lastHosts
 }
 
